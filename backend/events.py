@@ -7,7 +7,7 @@ class Events :
     """
     def __init__(self, path, type = 'mrk') :
         """Init mrk values in a dictionnary"""
-        stim = np.loadtxt(path, skiprows = 1, usecols = (0,1))
+        stim = np.loadtxt(path, skiprows = 1, usecols = (0,1), dtype = np.dtype(int))
         labels = np.loadtxt(path, skiprows = 1, usecols = 2, dtype = np.dtype(str))
 
         self.dic = dict.fromkeys(labels)
@@ -18,21 +18,22 @@ class Events :
 
     def plot(self) :
         """Plot the events"""
-        plt.close('all')
         count = 1
         fig = plt.Figure()
         ax = plt.subplot(1,1,1)
+
         for key, values in self.dic.items() :
             for begin, end in values :
-                ax.hlines(count, begin, end, color='r')
-                ax.scatter(begin, count, color='r')
-                ax.scatter(end, count, color='r')
-        ax.set_ylim(0, count + 1)
+                ax.hlines(count, begin, end, color='r', alpha = .5)
+                ax.scatter(begin, count, color='r', alpha = .5)
+                ax.scatter(end, count, color='r', alpha = .5)
+            count += 1
+
+        ax.set_ylim(0, count)
         ax.set_xlabel('Samples')
         ax.set_ylabel('Labels')
-        ax.set_yticks([i for i in range(1, count + 1)])
+        ax.set_yticks([i for i in range(1, count)])
         ax.set_yticklabels(self.dic.keys())
-        plt.show()
 
     def get_labels(self) :
         return [key for key, _ in self.dic.items()]
@@ -40,7 +41,7 @@ class Events :
     def get_events(self, label) :
         return self.dic[label]
 
-    def mne_events(self, label, anchor = 'beginning', offset = 0) :
+    def mne_events(self, event_label, anchor = 'beginning', offset = 0) :
         """
         Construct event array to inject in mne function
 
@@ -49,8 +50,8 @@ class Events :
         """
         if anchor == 'beginning' : index = 0
         else                     : index = 1
-        events = [[event[index] , 0, 0] for event in self.dic[label]]
-        return np.array(events)
+        events = [[event[index] , 0, 0] for event in self.dic[event_label]]
+        return np.array(events, dtype = np.dtype(int))
 
     def compute_epochs(self, label, raw, tmin, tmax) :
-        return Epochs(raw, self.mne_event(label), tmin = tmin, tmax = tmax, preload = True)
+        return Epochs(raw, self.mne_events(label), tmin = tmin, tmax = tmax, preload = True)
